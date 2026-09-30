@@ -10,14 +10,18 @@ const userSchema = new mongoose.Schema(
     rank: { type: String, required: true, trim: true, maxlength: 100 },
     badgeId: { type: String, required: false, trim: true, default: '' },
     isEmailVerified: { type: Boolean, default: false },
+    emailOtp: { type: String, default: null },
     emailOtpHash: { type: String, default: null },
     emailOtpExpiresAt: { type: Date, default: null },
-    isPhoneVerified: { type: Boolean, default: true },
-    otpHash: { type: String, select: false },
-    otpPurpose: { type: String, enum: ['signup', 'login'], select: false },
-    otpExpiresAt: { type: Date, select: false },
-    otpLastSentAt: { type: Date, select: false },
-    otpAttempts: { type: Number, default: 0, select: false }
+    recentOtps: [
+      {
+        otp: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
+    resetOtp: { type: String, default: null },
+    resetOtpExpiresAt: { type: Date, default: null },
+    isPhoneVerified: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
