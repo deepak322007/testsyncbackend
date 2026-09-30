@@ -1,9 +1,7 @@
 const https = require('https');
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-
 /**
- * Sends a 6-digit OTP verification email via Resend HTTPS REST API (Port 443).
+ * Sends a 6-digit OTP verification email to ANY recipient email address via Brevo HTTPS REST API (Port 443).
  * @param {string} toEmail - Recipient email address
  * @param {string} otp - 6-digit OTP code
  */
@@ -12,8 +10,11 @@ async function sendEmailOtp(toEmail, otp) {
   console.log(`[EMAIL OTP GENERATED] To: ${toEmail} | Code: ${otp}`);
   console.log(`========================================`);
 
-  if (!RESEND_API_KEY) {
-    console.warn('[RESEND WARNING] RESEND_API_KEY environment variable is not configured.');
+  const senderEmail = process.env.EMAIL_USER || 'newgenrevtestsync@gmail.com';
+  const apiKey = process.env.BREVO_API_KEY || '';
+
+  if (!apiKey) {
+    console.warn('[BREVO WARNING] BREVO_API_KEY environment variable is not configured.');
     return false;
   }
 
@@ -29,20 +30,20 @@ async function sendEmailOtp(toEmail, otp) {
   `;
 
   const payload = JSON.stringify({
-    from: 'TestSync <onboarding@resend.dev>',
-    to: [toEmail],
+    sender: { name: 'TestSync Identity', email: senderEmail },
+    to: [{ email: toEmail }],
     subject: 'Your TestSync Email Verification Code',
-    html: htmlContent
+    htmlContent: htmlContent
   });
 
   return new Promise((resolve) => {
     try {
       const req = https.request({
-        hostname: 'api.resend.com',
-        path: '/emails',
+        hostname: 'api.brevo.com',
+        path: '/v3/smtp/email',
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'api-key': apiKey,
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(payload)
         },
@@ -53,15 +54,14 @@ async function sendEmailOtp(toEmail, otp) {
         res.on('end', () => {
           if (res.statusCode >= 200 && res.statusCode < 300) {
             console.log('------------------------------------------------');
-            console.log(`[RESEND API SUCCESS] Email sent to: ${toEmail}`);
+            console.log(`[BREVO API SUCCESS] Verification email sent to: ${toEmail}`);
             console.log(`- Response: ${body}`);
             console.log('------------------------------------------------');
             resolve(true);
           } else {
             console.warn('================================================');
-            console.warn(`[RESEND API NOTICE] Status ${res.statusCode} for ${toEmail}:`);
+            console.warn(`[BREVO API NOTICE] Status ${res.statusCode} for ${toEmail}:`);
             console.warn(`- Response: ${body}`);
-            console.warn(`- Use 123456 or console OTP to complete verification.`);
             console.warn('================================================');
             resolve(false);
           }
@@ -69,21 +69,21 @@ async function sendEmailOtp(toEmail, otp) {
       });
 
       req.on('error', (e) => {
-        console.error(`[RESEND API ERROR] Request error: ${e.message}`);
+        console.error(`[BREVO API ERROR] Request error: ${e.message}`);
         resolve(false);
       });
 
       req.write(payload);
       req.end();
     } catch (e) {
-      console.error(`[RESEND API EXCEPTION] ${e.message}`);
+      console.error(`[BREVO API EXCEPTION] ${e.message}`);
       resolve(false);
     }
   });
 }
 
 function verifySmtpConnection() {
-  console.log(`[RESEND API INITIALIZED] Using Resend HTTPS REST API (Port 443)`);
+  console.log(`[BREVO API INITIALIZED] Brevo HTTPS REST API (Port 443) active for all recipients`);
 }
 
 verifySmtpConnection();
