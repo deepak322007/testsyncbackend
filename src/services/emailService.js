@@ -33,33 +33,23 @@ async function sendEmailOtp(toEmail, otp) {
     `
   };
 
-  // Attempt 1: Standard Gmail Service Transport
   try {
-    const transporter1 = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass }
-    });
-    await transporter1.sendMail(mailOptions);
-    console.log(`Verification email sent successfully to ${toEmail} via Gmail Service`);
-    return true;
-  } catch (err1) {
-    console.warn('Gmail service transport failed, attempting fallback SMTP IPv4:', err1.message);
-  }
-
-  // Attempt 2: Direct IPv4 SMTP Transport Fallback (for Render Cloud environment)
-  try {
-    const transporter2 = nodemailer.createTransport({
+    const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      family: 4,
+      port: 465,
+      secure: true,
+      family: 4, // Force IPv4 to prevent Render cloud IPv6 ENETUNREACH timeouts
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
       auth: { user, pass }
     });
-    await transporter2.sendMail(mailOptions);
-    console.log(`Verification email sent successfully to ${toEmail} via IPv4 SMTP`);
+
+    await transporter.sendMail(mailOptions);
+    console.log(`[SMTP SUCCESS] Verification email sent successfully to ${toEmail}`);
     return true;
-  } catch (err2) {
-    console.error('Error sending verification email via all transports:', err2.message);
+  } catch (error) {
+    console.error(`[SMTP ERROR] Failed to send email to ${toEmail}:`, error.message);
     return false;
   }
 }
